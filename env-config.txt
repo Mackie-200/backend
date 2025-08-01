@@ -1,0 +1,5 @@
+ATLAS_URI=mongodb+srv://chirumezanimcdonald:kE002fMIdx4t8E22@cluster0.euf4bi7.mongodb.net/parking-management?retryWrites=true&w=majority&appName=Cluster0
+JWT_SECRET=parking-space-management-super-secret-jwt-key-2024-make-this-very-long-and-random
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
