@@ -2,71 +2,30 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  role: {
-    type: String,
-    enum: ['user', 'owner', 'admin'],
-    default: 'user'
-  },
-  phone: {
-    type: String,
-    trim: true
-  },
-  profileImage: {
-    type: String,
-    default: null
-  },
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-  // For parking space owners
-  businessName: {
-    type: String,
-    trim: true
-  },
-  businessLicense: {
-    type: String,
-    trim: true
-  },
-  // User preferences
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true, minlength: 6 },
+  role: { type: String, enum: ['user', 'owner', 'admin'], default: 'user' },
+  phone: { type: String, trim: true },
+  profileImage: { type: String, default: null },
+  isVerified: { type: Boolean, default: false },
+  businessName: { type: String, trim: true },
+  businessLicense: { type: String, trim: true },
   preferences: {
     notifications: {
       email: { type: Boolean, default: true },
       sms: { type: Boolean, default: false },
       push: { type: Boolean, default: true }
     },
-    defaultPaymentMethod: {
-      type: String,
-      default: null
-    }
+    defaultPaymentMethod: { type: String, default: null }
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {
@@ -74,7 +33,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
+// Compare password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
@@ -87,3 +46,4 @@ userSchema.methods.toJSON = function() {
 };
 
 module.exports = mongoose.model('User', userSchema);
+

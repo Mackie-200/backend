@@ -1,6 +1,5 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 
@@ -11,9 +10,7 @@ const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
-// @access  Public
+// @route POST /api/auth/register
 router.post('/register', [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
@@ -22,8 +19,7 @@ router.post('/register', [
 ], async (req, res) => {
   try {
     console.log('Registration attempt:', req.body);
-    
-    // Check validation errors
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -44,22 +40,17 @@ router.post('/register', [
       });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Create new user
+    // Create new user (password will be hashed by pre-save hook)
     const newUser = new User({
       name,
       email,
-      password: hashedPassword,
+      password,
       phone: phone || '',
       role: role || 'user'
     });
 
     await newUser.save();
 
-    // Generate token
     const token = generateToken(newUser._id);
 
     res.status(201).json({
@@ -81,22 +72,19 @@ router.post('/register', [
     console.error('Registration error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: error.message
     });
   }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
+// @route POST /api/auth/login
 router.post('/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
     console.log('Login attempt:', { email: req.body.email });
-    
-    // Check validation errors
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -108,25 +96,23 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid email or password'
       });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Compare password using model method
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid email or password'
       });
     }
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.json({
@@ -148,7 +134,7 @@ router.post('/login', [
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login'
+      message: error.message
     });
   }
 });
